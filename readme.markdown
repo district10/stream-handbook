@@ -10,6 +10,8 @@ This document covers the basics of how to write [node.js](http://nodejs.org/)
 programs with [streams](http://nodejs.org/docs/latest/api/stream.html).     
 You also could read a **[chinese edition](https://github.com/jabez128/stream-handbook)**
 
+
+/* cc licenses */
 [![cc-by-3.0](http://i.creativecommons.org/l/by/3.0/80x15.png)](http://creativecommons.org/licenses/by/3.0/)
 
 # node packaged manuscript
@@ -37,6 +39,12 @@ another way. This is the way of IO also."
 ![doug mcilroy](http://substack.net/images/mcilroy.png)
 
 ***
+
+```
+paragraph...                        /* note */ // cool, a good guide
+[text](url)
+paragraph...
+```
 
 Streams come to us from the
 [earliest days of unix](http://www.youtube.com/watch?v=tc4ROCJYbm0)
@@ -89,6 +97,8 @@ var server = http.createServer(function (req, res) {
 server.listen(8000);
 ```
 
+/* note */ // bulky, and buffers up the entire `data.txt` file into memory
+
 This code works but it's bulky and buffers up the entire `data.txt` file into
 memory for every request before writing the result back to clients. If
 `data.txt` is very large, your program could start eating a lot of memory as it
@@ -107,8 +117,8 @@ var http = require('http');
 var fs = require('fs');
 
 var server = http.createServer(function (req, res) {
-    var stream = fs.createReadStream(__dirname + '/data.txt');
-    stream.pipe(res);
+    var stream = fs.createReadStream(__dirname + '/data.txt');       /* fs.createReadStream(filepath) */
+    stream.pipe(res);                                                /* readableStream.pipe(dst) */
 });
 server.listen(8000);
 ```
@@ -131,7 +141,7 @@ var oppressor = require('oppressor');
 
 var server = http.createServer(function (req, res) {
     var stream = fs.createReadStream(__dirname + '/data.txt');
-    stream.pipe(oppressor(req)).pipe(res);
+    stream.pipe(oppressor(req)).pipe(res);                           /* stream.pipe(oppressor(req)).pipe(res); */
 });
 server.listen(8000);
 ```
@@ -159,7 +169,7 @@ All the different types of streams use `.pipe()` to pair inputs with outputs.
 the output to a destination writable stream `dst`:
 
 ```
-src.pipe(dst)
+src.pipe(dst)                                                        /* src.pipe(dst) */
 ```
 
 `.pipe(dst)` returns `dst` so that you can chain together multiple `.pipe()`
@@ -172,7 +182,7 @@ which is the same as:
 
 ``` js
 a.pipe(b);
-b.pipe(c);
+b.pipe(c);                                                           /* chained pipe */
 c.pipe(d);
 ```
 
@@ -202,7 +212,7 @@ Let's make a readable stream!
 var Readable = require('stream').Readable;
 
 var rs = new Readable;
-rs.push('beep ');
+rs.push('beep ');                                                    /* push to readableStream: rs.push(obj) */
 rs.push('boop\n');
 rs.push(null);
 
@@ -234,11 +244,12 @@ var rs = Readable();
 
 var c = 97;
 rs._read = function () {
-    rs.push(String.fromCharCode(c++));
-    if (c > 'z'.charCodeAt(0)) rs.push(null);
+    rs.push(String.fromCharCode(c++));                               /* a reable stream, where the stream comes from? */
+    if (c > 'z'.charCodeAt(0)) rs.push(null);                        /* rs._read function, that's the source of stream */
 };
-
-rs.pipe(process.stdout);
+                                                                     /* the river may drain(when c > 'z', rs.push(null)) */
+rs.pipe(process.stdout);                                             /* rs._read() ---> producer ---stream-pipe(rs._pipe(dst))---> consumer */
+                                                                     /* process.stdout */
 ```
 
 ```
@@ -275,7 +286,7 @@ rs._read = function () {
 
 rs.pipe(process.stdout);
 
-process.on('exit', function () {
+process.on('exit', function () {                           /* like at_exit(exit_call_back_func_ptr) in C */
     console.error('\n_read() called ' + (c - 97) + ' times');
 });
 process.stdout.on('error', process.exit);
@@ -315,7 +326,7 @@ or [concat-stream](https://npmjs.org/package/concat-stream),
 but occasionally it might be useful to consume a readable stream directly.
 
 ``` js
-process.stdin.on('readable', function () {
+process.stdin.on('readable', function () {                           /* stream.on('readable', cb), use `stream.read()` in cb */
     var buf = process.stdin.read();
     console.dir(buf);
 });
@@ -343,7 +354,7 @@ Here's an example of using `.read(n)` to buffer stdin into 3-byte chunks:
 
 ``` js
 process.stdin.on('readable', function () {
-    var buf = process.stdin.read(3);
+    var buf = process.stdin.read(3);                                 /* read a little, bit by bit, rs.read(num) */
     console.dir(buf);
 });
 ```
@@ -388,12 +399,12 @@ can build a readable parser to split on newlines:
 ``` js
 var offset = 0;
 
-process.stdin.on('readable', function () {
+process.stdin.on('readable', function () {                 /* edit a stream, cool~ nice example  */
     var buf = process.stdin.read();
     if (!buf) return;
     for (; offset < buf.length; offset++) {
-        if (buf[offset] === 0x0a) {
-            console.dir(buf.slice(0, offset).toString());
+        if (buf[offset] === 0x0a) {                        /* 0x0a, LF(line-feed, a.k.a. `\n`) */
+            console.dir(buf.slice(0, offset).toString());  /* print this line */
             buf = buf.slice(offset + 1);
             offset = 0;
             process.stdin.unshift(buf);
@@ -436,10 +447,10 @@ Just define a `._write(chunk, enc, next)` function and then you can pipe a
 readable stream in:
 
 ``` js
-var Writable = require('stream').Writable;
+var Writable = require('stream').Writable;                 /* var ws = require('stream').Writable(); */
 var ws = Writable();
-ws._write = function (chunk, enc, next) {
-    console.dir(chunk);
+ws._write = function (chunk, enc, next) {                  /* ws._write = function (chunk, enc, next) */
+    console.dir(chunk);                                    /* enc => encoding */
     next();
 };
 
@@ -452,7 +463,13 @@ $ (echo beep; sleep 1; echo boop) | node write0.js
 <Buffer 62 6f 6f 70 0a>
 ```
 
-The first argument, `chunk` is the data that is written by the producer.
+The first argument, `chunk` is the data that is written by the producer. 
+
+```
+            `chunk`: the data that is written by the producer. 
+            `enc`: encoding
+            `next`: callback
+```
 
 The second argument `enc` is a string with the string encoding, but only when
 `opts.decodeString` is `false` and you've been written a string.
